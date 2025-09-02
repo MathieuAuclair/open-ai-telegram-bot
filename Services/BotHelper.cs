@@ -145,9 +145,13 @@ namespace BotDashboard.Services
                 var imageBytes = await SoraHelper.RequestImage(query.Message.ReplyToMessage.Text, query.Data);
                 using var stream = new MemoryStream(imageBytes);
                 await _bot.SendPhoto(
-                    chatId: query.Message.ReplyToMessage.Id,
+                    chatId: query.Message.Chat.Id,
                     photo: stream,
-                    caption: "Вот ваше сгенерированное изображение"
+                    caption: "Вот ваше сгенерированное изображение",
+                    replyParameters: new ReplyParameters
+                    {
+                        MessageId = query.Message.ReplyToMessage.Id
+                    }
                 );
             }
             catch (Exception exception)
