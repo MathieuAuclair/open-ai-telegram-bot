@@ -5,7 +5,6 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace BotDashboard.Services
 {
@@ -14,13 +13,22 @@ namespace BotDashboard.Services
         private readonly string _token;
         private readonly string _commandHandle;
         private readonly string[] _allowedUsers;
+        private readonly string _pageUrl;
         private TelegramBotClient _bot;
+        private GitLabHelper _gitlab;
 
         public BotService()
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
                 .Build();
+
+            _pageUrl = config["Gitlab:PageUrl"];
+            _gitlab = new GitLabHelper(
+                config["Gitlab:Host"],
+                config["Gitlab:ProjectId"],
+                config["Gitlab:PrivateToken"]
+            );
 
             _token = config["Telegram:BotToken"];
             _commandHandle = config["Telegram:CommandHandle"];
@@ -63,10 +71,6 @@ namespace BotDashboard.Services
                     case UpdateType.Message:
                         await HandleMessage(update.Message!);
                         break;
-
-                    case UpdateType.CallbackQuery:
-                        await HandleButton(update.CallbackQuery!);
-                        break;
                 }
             }
             catch (Exception exception)
@@ -108,65 +112,72 @@ namespace BotDashboard.Services
 
                 if (msg.Text.StartsWith(_commandHandle))
                 {
-                    InlineKeyboardMarkup menuMarkup = new([[
-                        InlineKeyboardButton.WithCallbackData("1024x1024"),
-                        InlineKeyboardButton.WithCallbackData("1024x1536"),
-                        InlineKeyboardButton.WithCallbackData("1536x1024"),
-                        InlineKeyboardButton.WithCallbackData("auto")
-                    ]]);
+                    var filename = Guid.NewGuid() + ".png";
 
-                    await _bot.SendMessage(
-                        chatId: msg.Chat.Id,
-                        text: "Какие размеры?",
-                        parseMode: ParseMode.None,
-                        replyParameters: new ReplyParameters
+                    try
+                    {
+                        var base64 = await SoraHelper.RequestImage(msg.ReplyToMessage.Text, msg.Text.Replace(_commandHandle, ""));
+
+                        await _gitlab.CommitFileAsync("main", filename, base64);
+
+                        var isPipelineSuccessful = await _gitlab.WaitForPipelineAsync("main");
+
+                        if (isPipelineSuccessful)
                         {
-                            MessageId = msg.MessageId
-                        },
-                        replyMarkup: menuMarkup
-                    );
+                            var url = _pageUrl + filename;
+                            var retryCount = 60; // 5 минута
+
+                            using var client = new HttpClient();
+                            while (!(await client.GetAsync(url)).IsSuccessStatusCode)
+                            {
+                                Console.WriteLine($"Ждем, когда {url} станет доступно...");
+                                await Task.Delay(5000);
+                                retryCount--;
+
+                                if (retryCount < 0)
+                                {
+                                    throw new Exception($"Распространение изображения {filename} заняло больше времени, чем ожидалось");
+                                }
+                            }
+
+                            await _bot.SendMessage(
+                                    chatId: msg.Chat.Id,
+                                    text: _pageUrl + filename,
+                                    parseMode: ParseMode.None,
+                                    replyParameters: new ReplyParameters
+                                    {
+                                        MessageId = msg.MessageId
+                                    }
+                                );
+
+                            Console.WriteLine($"Доставленное изображение {filename}...");
+                        }
+                        else
+                        {
+                            await _bot.SendMessage(
+                                chatId: msg.Chat.Id,
+                                text: "Не удалось опубликовать ваше изображение!",
+                                parseMode: ParseMode.None,
+                                replyParameters: new ReplyParameters
+                                {
+                                    MessageId = msg.MessageId
+                                }
+                            );
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        await _bot.SendMessage(
+                            chatId: msg.Chat.Id,
+                            text: $"Произошла ошибка, запрос не обработан! `{exception?.Message}`...",
+                            replyParameters: new ReplyParameters
+                            {
+                                MessageId = msg.Id
+                            }
+                        );
+                    }
                 }
             }
-        }
-
-        async Task HandleButton(CallbackQuery query)
-        {
-            await _bot.SendMessage(
-                chatId: query.Message.Chat.Id,
-                text: $"Создание изображения по следующему запросу!",
-                replyParameters: new ReplyParameters
-                {
-                    MessageId = query.Message.ReplyToMessage.Id
-                }
-            );
-
-            try
-            {
-                var imageBytes = await SoraHelper.RequestImage(query.Message.ReplyToMessage.Text, query.Data);
-                using var stream = new MemoryStream(imageBytes);
-                await _bot.SendPhoto(
-                    chatId: query.Message.Chat.Id,
-                    photo: stream,
-                    caption: "Вот ваше сгенерированное изображение",
-                    replyParameters: new ReplyParameters
-                    {
-                        MessageId = query.Message.ReplyToMessage.Id
-                    }
-                );
-            }
-            catch (Exception exception)
-            {
-                await _bot.SendMessage(
-                    chatId: query.Message.Chat.Id,
-                    text: $"Произошла ошибка, запрос не обработан! `{exception.Message}`...",
-                    replyParameters: new ReplyParameters
-                    {
-                        MessageId = query.Message.ReplyToMessage.Id
-                    }
-                );
-            }
-
-            await _bot.AnswerCallbackQuery(query.Id);
         }
     }
 }

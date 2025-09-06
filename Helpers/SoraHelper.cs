@@ -6,7 +6,7 @@ namespace OlegBot.Helpers
 {
     public static class SoraHelper
     {
-        public static async Task<byte[]> RequestImage(string prompt, string size)
+        public static async Task<string> RequestImage(string prompt, string size)
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
@@ -49,17 +49,10 @@ namespace OlegBot.Helpers
             }
 
 
-            var base64 = doc.RootElement
+            return doc.RootElement
                 .GetProperty("data")[0]
                 .GetProperty("b64_json")
                 .GetString();
-
-            if (base64 == null)
-            {
-                throw new NullReferenceException("Не удалось получить base64 из API!");
-            }
-
-            return Convert.FromBase64String(base64);
         }
     }
 }
