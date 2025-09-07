@@ -15,7 +15,7 @@ namespace BotDashboard.Services
         private readonly string[] _allowedUsers;
         private readonly string _pageUrl;
         private TelegramBotClient _bot;
-        private GitLabHelper _gitlab;
+        private readonly IGitHelper _git;
 
         public BotService()
         {
@@ -23,12 +23,29 @@ namespace BotDashboard.Services
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            _pageUrl = config["Gitlab:PageUrl"];
-            _gitlab = new GitLabHelper(
-                config["Gitlab:Host"],
-                config["Gitlab:ProjectId"],
-                config["Gitlab:PrivateToken"]
-            );
+            if (config["StorageProvider"].Equals("gitlab"))
+            {
+                _pageUrl = config["Gitlab:PageUrl"];
+                _git = new GitLabHelper(
+                    config["Gitlab:Host"],
+                    config["Gitlab:ProjectId"],
+                    config["Gitlab:PrivateToken"]
+                );
+            }
+            else if (config["StorageProvider"].Equals("github"))
+            {
+                _pageUrl = config["Github:PageUrl"];
+                _git = new GitHubHelper(
+                    config["Github:Host"],
+                    config["Github:Owner"],
+                    config["Github:Repo"],
+                    config["Github:PrivateToken"]
+                );
+            }
+            else
+            {
+                throw new NotImplementedException($"Storage provided {config["StorageProvider"]} not yet supported...");
+            }
 
             _token = config["Telegram:BotToken"];
             _commandHandle = config["Telegram:CommandHandle"];
@@ -118,52 +135,38 @@ namespace BotDashboard.Services
                     {
                         var base64 = await SoraHelper.RequestImage(msg.ReplyToMessage.Text, msg.Text.Replace(_commandHandle, ""));
 
-                        await _gitlab.CommitFileAsync("main", filename, base64);
+                        // Local environment testing bypass
+                        //var base64 = Convert.ToBase64String(new HttpClient().GetByteArrayAsync("https://businessonline.app/images/logo.png").Result);
 
-                        var isPipelineSuccessful = await _gitlab.WaitForPipelineAsync("main");
+                        await _git.CommitFileAsync("main", filename, base64);
 
-                        if (isPipelineSuccessful)
+                        var url = _pageUrl + filename;
+                        var retryCount = 60; // 5 минута
+
+                        using var client = new HttpClient();
+                        while (!(await client.GetAsync(url)).IsSuccessStatusCode)
                         {
-                            var url = _pageUrl + filename;
-                            var retryCount = 60; // 5 минута
+                            Console.WriteLine($"Ждем, когда {url} станет доступно...");
+                            await Task.Delay(5000);
+                            retryCount--;
 
-                            using var client = new HttpClient();
-                            while (!(await client.GetAsync(url)).IsSuccessStatusCode)
+                            if (retryCount < 0)
                             {
-                                Console.WriteLine($"Ждем, когда {url} станет доступно...");
-                                await Task.Delay(5000);
-                                retryCount--;
-
-                                if (retryCount < 0)
-                                {
-                                    throw new Exception($"Распространение изображения {filename} заняло больше времени, чем ожидалось");
-                                }
+                                throw new Exception($"Распространение изображения {filename} заняло больше времени, чем ожидалось");
                             }
-
-                            await _bot.SendMessage(
-                                    chatId: msg.Chat.Id,
-                                    text: _pageUrl + filename,
-                                    parseMode: ParseMode.None,
-                                    replyParameters: new ReplyParameters
-                                    {
-                                        MessageId = msg.MessageId
-                                    }
-                                );
-
-                            Console.WriteLine($"Доставленное изображение {filename}...");
                         }
-                        else
-                        {
-                            await _bot.SendMessage(
-                                chatId: msg.Chat.Id,
-                                text: "Не удалось опубликовать ваше изображение!",
-                                parseMode: ParseMode.None,
-                                replyParameters: new ReplyParameters
-                                {
-                                    MessageId = msg.MessageId
-                                }
-                            );
-                        }
+
+                        await _bot.SendMessage(
+                            chatId: msg.Chat.Id,
+                            text: _pageUrl + filename,
+                            parseMode: ParseMode.None,
+                            replyParameters: new ReplyParameters
+                            {
+                                MessageId = msg.MessageId
+                            }
+                        );
+
+                        Console.WriteLine($"Доставленное изображение {filename}...");
                     }
                     catch (Exception exception)
                     {
