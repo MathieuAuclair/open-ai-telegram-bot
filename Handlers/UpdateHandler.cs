@@ -150,13 +150,15 @@ namespace OlegBot.Handlers
             {
                 session = new Session
                 {
-                    ChatId = update.Message.Chat.Id,
-                    UserId = update.Message.From.Id,
+                    ChatId = update.CallbackQuery.Message.Chat.Id,
+                    UserId = update.CallbackQuery.From.Id,
                     Variables = new Dictionary<string, string>(),
                     Index = 1
                 };
 
                 _userSessions.Add(session);
+                
+                update.CallbackQuery.Data = null;
             }
 
             var step = _chatConfiguration.Messages
@@ -394,15 +396,23 @@ namespace OlegBot.Handlers
             {
                 InlineKeyboardMarkup menuMarkup = new(step.Buttons.Select(button =>
                 {
-                    var safeText = button.Text;
                     const int maxButtonBytes = 64;
 
                     if (Encoding.UTF8.GetByteCount(button.Text) > maxButtonBytes)
                     {
-                        throw new ArgumentException($"⚠️ Button text too long ({Encoding.UTF8.GetByteCount(safeText)} bytes): \"{safeText}\". Truncating to fit.");
+                        throw new ArgumentException($"⚠️ Button text too long ({Encoding.UTF8.GetByteCount(button.Text)} bytes): \"{button.Text}\".");
                     }
 
-                    return new[] { InlineKeyboardButton.WithCallbackData(safeText) };
+                    if (button.Type == ButtonType.LINK)
+                    {
+                        return new[] { InlineKeyboardButton.WithUrl(button.Text, button.Link) };
+                    }
+                    else if (button.Type == ButtonType.CALLBACK)
+                    {
+                        return new[] { InlineKeyboardButton.WithCallbackData(button.Text) };
+                    }
+
+                    return [];
                 }));
 
                 var text = step.Text;

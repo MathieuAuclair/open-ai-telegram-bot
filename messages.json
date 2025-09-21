@@ -8,18 +8,22 @@
       "buttons": [
         {
           "text": "ОТКРЫТКА",
+          "type": "CALLBACK",
           "next": 2
         },
         {
           "text": "ТЕКСТОВОЕ ПОЗДРАВЛЕНИЕ",
+          "type": "CALLBACK",
           "next": 10
         },
         {
           "text": "Оставить отзыв",
+          "type": "CALLBACK",
           "next": 14
         },
         {
           "text": "Тех. поддержка",
+          "type": "CALLBACK",
           "next": 17
         }
       ]
@@ -32,14 +36,17 @@
       "buttons": [
         {
           "text": "Давай  🤩",
+          "type": "CALLBACK",
           "next": 3
         },
         {
           "text": "Не-а  😜",
+          "type": "CALLBACK",
           "next": 1
         },
         {
           "text": "Покажи пример  🤔",
+          "type": "CALLBACK",
           "next": 18
         }
       ]
@@ -52,10 +59,12 @@
       "buttons": [
         {
           "text": "ДА",
+          "type": "CALLBACK",
           "next": 4
         },
         {
           "text": "Позже",
+          "type": "CALLBACK",
           "next": 1
         }
       ]
@@ -96,10 +105,12 @@
       "buttons": [
         {
           "text": "Всё верно",
+          "type": "CALLBACK",
           "next": 7
         },
         {
           "text": "Ввести заново",
+          "type": "CALLBACK",
           "next": 4
         }
       ]
@@ -112,10 +123,12 @@
       "buttons": [
         {
           "text": "Юmoney - 99 руб.",
+          "type": "CALLBACK",
           "next": 9999
         },
         {
           "text": "Юmoney - что это?",
+          "type": "CALLBACK",
           "next": 16
         }
       ]
@@ -167,14 +180,17 @@
       "buttons": [
         {
           "text": "ТЕКСТОВОЕ ПОЗДРАВЛЕНИЕ",
+          "type": "CALLBACK",
           "next": 10
         },
         {
           "text": "ОСТАВИТЬ ОТЗЫВ",
+          "type": "CALLBACK",
           "next": 14
         },
         {
           "text": "Завершить",
+          "type": "CALLBACK",
           "next": 1
         }
       ]
@@ -240,14 +256,17 @@
       "buttons": [
         {
           "text": "СДЕЛАТЬ ОТКРЫТКУ К ТЕКСТУ",
+          "type": "CALLBACK",
           "next": 2
         },
         {
           "text": "СОЗДАТЬ ПОЗДРАВЛЕНИЕ",
+          "type": "CALLBACK",
           "next": 10
         },
         {
           "text": "ЗАВЕРШИТЬ",
+          "type": "CALLBACK",
           "next": 1
         }
       ]
@@ -308,15 +327,20 @@
     {
       "id": 17,
       "text": "Свяжитесь с @support для получения поддержки",
-      "actions": [
+      "actions": [],
+      "variables": [],
+      "buttons": [
         {
-          "type": "FORWARD",
-          "params": [],
+          "text": "Открыть чат",
+          "type": "LINK",
+          "link": "https://t.me/@support"
+        },
+        {
+          "text": "Вернуться к началу",
+          "type": "CALLBACK",
           "next": 1
         }
-      ],
-      "variables": [],
-      "buttons": []
+      ]
     },
     {
       "id": 18,
@@ -326,10 +350,12 @@
       "buttons": [
         {
           "text": "Давай 😀",
+          "type": "CALLBACK",
           "next": 3
         },
         {
           "text": "Позже 😎",
+          "type": "CALLBACK",
           "next": 1
         }
       ]
