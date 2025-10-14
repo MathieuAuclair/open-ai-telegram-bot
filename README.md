@@ -72,3 +72,7 @@ pages:
   }
 }
 ```
+
+## Дополнительная информация
+
+- [Зарегистрируйте приложение с yoowallet](https://yoomoney.ru/myservices/new) (https://yoomoney.ru/myservices/new)

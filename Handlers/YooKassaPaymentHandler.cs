@@ -5,7 +5,7 @@ using Telegram.Bots.Http;
 
 namespace OlegBot.Helpers
 {
-    public class PaymentHandler
+    public class YooKassaPaymentHandler
     {
         private readonly HttpClient _http;
         private readonly string _secretKey;
@@ -14,7 +14,7 @@ namespace OlegBot.Helpers
         private readonly TimeSpan _pollingInterval;
         private readonly string _botUsername;
 
-        public PaymentHandler(
+        public YooKassaPaymentHandler(
             string botUsername,
             string secretKey,
             string shopId,

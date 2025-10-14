@@ -13,16 +13,29 @@ namespace OlegBot.Handlers
     public class UpdateHandler
     {
         private readonly TelegramBotClient _bot;
-        private readonly PaymentHandler _paymentHandler;
+        private readonly string _botUserName;
+        private IConfiguration _config;
+        private readonly YooWalletPaymentHandler _walletPaymentHandler;
+        private readonly YooKassaPaymentHandler _kassaPaymentHandler;
         private readonly Root _chatConfiguration;
         private readonly string _commandHandle;
         private static readonly List<Session> _userSessions = new();
 
-        public UpdateHandler(TelegramBotClient bot, PaymentHandler paymentHandler, Root chatConfiguration, string commandHandle)
+        public UpdateHandler(
+            TelegramBotClient bot,
+            string botUsername,
+            IConfiguration config,
+            YooWalletPaymentHandler walletPaymentHandler,
+            YooKassaPaymentHandler kassaPaymentHandler,
+            Root chatConfiguration,
+            string commandHandle)
         {
             _bot = bot;
+            _botUserName = botUsername;
+            _config = config;
             _chatConfiguration = chatConfiguration;
-            _paymentHandler = paymentHandler;
+            _walletPaymentHandler = walletPaymentHandler;
+            _kassaPaymentHandler = kassaPaymentHandler;
             _commandHandle = commandHandle;
         }
 
@@ -118,7 +131,15 @@ namespace OlegBot.Handlers
                         await ExecuteUMoneyFetch(
                             session,
                             action,
-                            update.Message.Chat.Id
+                            update.Message.Chat.Id,
+                            update.Message.From.Id
+                        );
+                        break;
+                    case ActionType.U_KASSA_FETCH:
+                        await ExecuteUKassaFetch(
+                            session,
+                            action,
+                            update.CallbackQuery.Message.Chat.Id
                         );
                         break;
                 }
@@ -157,7 +178,7 @@ namespace OlegBot.Handlers
                 };
 
                 _userSessions.Add(session);
-                
+
                 update.CallbackQuery.Data = null;
             }
 
@@ -225,6 +246,14 @@ namespace OlegBot.Handlers
                         await ExecuteUMoneyFetch(
                             session,
                             action,
+                            update.CallbackQuery.Message.Chat.Id,
+                            update.CallbackQuery.Message.From.Id
+                        );
+                        break;
+                    case ActionType.U_KASSA_FETCH:
+                        await ExecuteUKassaFetch(
+                            session,
+                            action,
                             update.CallbackQuery.Message.Chat.Id
                         );
                         break;
@@ -241,14 +270,45 @@ namespace OlegBot.Handlers
 
             await SendMessage(step, session, update.CallbackQuery.Message.Chat.Id);
 
-            await _bot.AnswerCallbackQuery(update.CallbackQuery.Id);
+            try
+            {
+                await _bot.AnswerCallbackQuery(update.CallbackQuery.Id);
+            }
+            catch
+            {
+                // Do nothing
+            }
         }
 
-        private async Task ExecuteUMoneyFetch(Session session, ActionItem action, long chatId)
+        private async Task ExecuteUMoneyFetch(Session session, ActionItem action, long chatId, long userId)
         {
             var price = session.Variables[action.Params[0]];
-            var currency = session.Variables[action.Params[1]];
-            var paymentInfo = await _paymentHandler.ProcessPayment(price, currency);
+            var recipientWalletId = action.Params[1];
+
+            await _walletPaymentHandler.ProcessPayment(userId, chatId);
+
+            var isSuccessful = await _walletPaymentHandler.WaitForPaymentAsync($"{userId}-{chatId}", price, recipientWalletId);
+
+            if (isSuccessful)
+            {
+                session.Index = action.Next;
+            }
+            else
+            {
+                await _bot.SendMessage(
+                    chatId,
+                    "🔴 Не удалось произвести платеж, убедитесь, что ваша учетная запись полностью верифицирована, проверьте баланс или обратитесь в службу поддержки клиентов!\n⚠️⚠️⚠️"
+                );
+
+                session.Index = 1;
+            }
+        }
+
+        private async Task ExecuteUKassaFetch(Session session, ActionItem action, long chatId)
+        {
+            var price = session.Variables[action.Params[0]];
+            var recipient = session.Variables[action.Params[1]];
+            var paymentInfo = await _kassaPaymentHandler.ProcessPayment(price, recipient);
             var paymentId = paymentInfo.Item1;
             var paymentUrl = paymentInfo.Item2;
 
@@ -261,7 +321,7 @@ namespace OlegBot.Handlers
                 )
             );
 
-            var isSuccessful = await _paymentHandler.WaitForPaymentAsync(paymentId);
+            var isSuccessful = await _kassaPaymentHandler.WaitForPaymentAsync(paymentId);
 
             if (isSuccessful == null)
             {
@@ -270,7 +330,7 @@ namespace OlegBot.Handlers
 
                 await _bot.SendMessage(
                     chatId,
-                    text: "Не удалось обработать платеж, обратитесь в службу поддержки!",
+                    text: "🔴 Не удалось обработать платеж, обратитесь в службу поддержки!",
                     parseMode: ParseMode.Markdown
                 );
 
@@ -284,7 +344,7 @@ namespace OlegBot.Handlers
             {
                 await _bot.SendMessage(
                     chatId,
-                    text: "Не удалось произвести платеж, проверьте баланс или обратитесь в службу поддержки!",
+                    text: "🔴 Не удалось произвести платеж, проверьте баланс или обратитесь в службу поддержки!",
                     parseMode: ParseMode.Markdown
                 );
 
@@ -346,7 +406,7 @@ namespace OlegBot.Handlers
             {
                 var base64 = await SoraHelper.RequestImage(
                     $"Full shot, realistic sight, no people. {prompt}. Signature in Russian: {signature}",
-                    "1000x1000"
+                    "1024x1024"
                 );
 
                 var cleanBase64 = base64.Contains(",") ? base64.Split(',')[1] : base64;

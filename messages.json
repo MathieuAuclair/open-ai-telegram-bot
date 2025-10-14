@@ -139,7 +139,7 @@
       "actions": [
         {
           "type": "U_MONEY_FETCH",
-          "params": ["price", "currency"],
+          "params": ["price", "4100119363351087"],
           "next": 8
         }
       ],

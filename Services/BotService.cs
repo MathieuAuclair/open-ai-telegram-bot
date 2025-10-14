@@ -1,5 +1,4 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+using OlegBot.Bus;
 using OlegBot.Handlers;
 using OlegBot.Helpers;
 using Telegram.Bot;
@@ -14,7 +13,8 @@ namespace BotDashboard.Services
     {
         private IConfiguration _config;
         private readonly Root _chatConfiguration;
-        private PaymentHandler _paymentHandler;
+        private YooWalletPaymentHandler _walletPaymentHandler;
+        private YooKassaPaymentHandler _kassaPaymentHandler;
         private UpdateHandler _updateHandler;
         private TelegramBotClient _bot;
 
@@ -25,11 +25,24 @@ namespace BotDashboard.Services
                 .Build();
 
             _chatConfiguration = LoadConfiguration();
+
+            AuthEventBus.OnWalletLinked += async (requestId, token) =>
+            {
+                if (string.IsNullOrWhiteSpace(requestId))
+                {
+                    Console.WriteLine("[WARNING]: Invalid BUS event for wallet authentication...");
+                    return;
+                }
+                
+                _walletPaymentHandler.PendingRequestIds.Add(requestId, token);
+            };
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _bot = new TelegramBotClient(_config["Telegram:BotToken"]);
+
+            var botData = await _bot.GetMe();
 
             await _bot.SetMyCommands([
                 new BotCommand {
@@ -38,19 +51,29 @@ namespace BotDashboard.Services
                 },
             ]);
 
-            var user = await _bot.GetMe();
+            _kassaPaymentHandler = new YooKassaPaymentHandler(
+                botData.Username,
+                _config["UKassa:ApiKeySecret"],
+                _config["UKassa:ShopId"],
+                int.Parse(_config["UKassa:PaymentTimeoutInMinutes"]),
+                int.Parse(_config["UKassa:PollingIntervalInSeconds"])
+            );
 
-            _paymentHandler = new PaymentHandler(
-                user.Username,
-                _config["UMoney:ApiKeySecret"],
-                _config["UMoney:ShopId"],
+            _walletPaymentHandler = new YooWalletPaymentHandler(
+                _config["UMoney:ClientId"],
+                _config["UMoney:PrivateToken"],
+                _config["UMoney:ReturnUrl"],
                 int.Parse(_config["UMoney:PaymentTimeoutInMinutes"]),
-                int.Parse(_config["UMoney:PollingIntervalInSeconds"])
+                int.Parse(_config["UMoney:PollingIntervalInSeconds"]),
+                _bot
             );
 
             _updateHandler = new UpdateHandler(
                 _bot,
-                _paymentHandler,
+                botData.Username,
+                _config,
+                _walletPaymentHandler,
+                _kassaPaymentHandler,
                 _chatConfiguration,
                 _config["Telegram:CommandHandle"]
             );
