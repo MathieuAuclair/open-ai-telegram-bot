@@ -37,38 +37,58 @@ pages:
 
 ## Настройки (appsettings.json)
 
-**OpenAI**
+Для настройки бота необходимо заполнить все параметры в файле `appsettings.json`. Ниже приведено подробное описание каждого раздела.
 
-- ApiKey => Токен API в панели управления open ai manager
+**DeepSeek**
+- **ApiKey** — Ваш API-ключ, полученный в личном кабинете DeepSeek.
+
+**OpenAI**
+- **ApiKey** — Ваш API-ключ из панели управления OpenAI.
 
 **Telegram**
+- **BotToken** — Токен вашего бота, который вы получили у [@BotFather](https://t.me/botfather).
+- **CommandHandle** — Команда, которая активирует основную функцию бота. Например, `/start`.
+- **CommandDescription** — Описание команды, которое видят пользователи в интерфейсе Telegram.
 
-- AllowedUsers => Имена пользователей, которые могут использовать бота без @
-- BotToken => Токен, сгенерированный @botfather
-- CommandHandle => Что вызывает команду bot по умолчанию /image
+**UMoney** (для обработки платежей)
+- **ClientId** — Идентификатор вашего приложения в личном кабинете UMoney (YooMoney).
+- **PrivateToken** — Секретный API-ключ для доступа к платежам.
+- **PaymentTimeoutInMinutes** — Время в минутах, в течение которого платеж считается действительным (после этого времени оплата просрочивается).
+- **PollingIntervalInSeconds** — Как часто бот проверяет статус платежей (в секундах).
+- **ReturnUrl** — URL, на который пользователь возвращается после оплаты (рекомендуется не менять, если у вас нет особых требований).
 
-**Gitlab**
-
-- Host => По умолчанию используется официальный gitlab.com, но если вы самостоятельно размещаете gitlab, вы можете изменить URL
-- ProjectId => Зайдите в свой проект, затем в настройки, затем в общие, там должен быть ваш идентификатор проекта
-- PrivateToken => В левом верхнем углу выберите свой профиль, затем нажмите "Настройки", там будет "Access Token". Предоставьте доступ всем.
-- PageUrl => Зайдите в свой проект, затем в deploy, затем pages, после "Your Pages site is live at..." должен быть ваш URL-адрес. **Должно закончиться словами /**
+**Smtp** (для отправки email-уведомлений)
+- **Server** — Адрес SMTP-сервера вашей почты. Например, для Gmail: `smtp.gmail.com`.
+- **Port** — Порт для подключения. Обычно это `587` для защищенного соединения.
+- **FromAddress** — Email-адрес, с которого будут отправляться письма.
+- **Password** — Пароль от почты или специальный пароль для приложений.
+- **Unsubscribe** — Email-адрес, на который можно отправлять запросы на отписку от рассылки.
 
 ```json
 {
+  "DeepSeek": {
+    "ApiKey": "<your-deepseek-api-key>"
+  },
   "OpenAI": {
     "ApiKey": "<your-openai-api-key>"
   },
   "Telegram": {
-    "AllowedUsers": ["mathieuauclair"],
     "BotToken": "<your-bot-token>",
-    "CommandHandle": "/image"
+    "CommandHandle": "/start",
+    "CommandDescription": "<your-command-description>"
   },
-  "Gitlab": {
-    "Host": "https://gitlab.com",
-    "ProjectId": "<project-id>",
-    "PrivateToken": "<gitlab-user-api-token>",
-    "PageUrl": "<page-url-github-pages>"
+  "UMoney": {
+    "ShopId": "<your-shop-id>",
+    "ApiKeySecret": "<your-api-key-secret>",
+    "PaymentTimeoutInMinutes": 10,
+    "PollingIntervalInSeconds": 5
+  },
+  "Smtp": {
+    "Server": "mail.gmail.com",
+    "Port": 587,
+    "FromAddress": "<your-mail-address>",
+    "Password": "<your-email-password>",
+    "Unsubscribe": " <your-mail-address>"
   }
 }
 ```
