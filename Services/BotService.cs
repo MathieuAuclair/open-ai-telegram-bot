@@ -26,7 +26,7 @@ namespace BotDashboard.Services
 
             _chatConfiguration = LoadConfiguration();
 
-            AuthEventBus.OnWalletLinked += async (requestId, token) =>
+            AuthEventBus.OnWalletLinked += (requestId, token) =>
             {
                 if (string.IsNullOrWhiteSpace(requestId))
                 {

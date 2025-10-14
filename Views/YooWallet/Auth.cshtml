@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Платеж успешно авторизован";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+            margin: 20px;
+        }
+        
+        .success-icon {
+            font-size: 64px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .telegram-button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .telegram-button:hover {
+            background: #0077b3;
+        }
+        
+        .close-button {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .close-button:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✓</div>
+        <h1>Платеж успешно авторизован</h1>
+        <p>Вы можете закрыть это окно. Авторизация платежа прошла успешно, средства будут списаны с вашего счета в ближайшее время.</p>
+        <a href="https://t.me/@ViewBag.BotUsername" class="telegram-button">Вернуться в Telegram</a>
+        <br>
+        <button class="close-button" onclick="window.close()">Закрыть окно</button>
+    </div>
+
+    <script>
+        // Автоматическое закрытие через 5 секунд
+        setTimeout(() => {
+            if (confirm('Окно можно закрыть. Вернуться в Telegram?')) {
+                window.close();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

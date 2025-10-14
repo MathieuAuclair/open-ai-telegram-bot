@@ -3,7 +3,7 @@ using OlegBot.Bus;
 using OlegBot.Helpers;
 
 [ApiController]
-public class YooWalletController : ControllerBase
+public class YooWalletController : Controller
 {
     private readonly IConfiguration _config;
 
@@ -27,14 +27,7 @@ public class YooWalletController : ControllerBase
 
             AuthEventBus.Notify(state, token);
 
-            return Ok(
-                new
-                {
-                    success = true,
-                    access_token = token,
-                    state
-                }
-            );
+            return View("Auth");
         }
         catch (Exception ex)
         {

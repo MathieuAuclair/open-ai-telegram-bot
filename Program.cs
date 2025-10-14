@@ -13,7 +13,7 @@ class Program
                     services.AddHostedService<BotService>();
 
                     // Register controllers (for your /redirect endpoint etc.)
-                    services.AddControllers();
+                    services.AddControllersWithViews();
                 });
 
                 webBuilder.Configure(app =>
