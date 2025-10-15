@@ -10,31 +10,6 @@ dotnet publish -c Release -r win-x64 --self-contained true
 dotnet publish -c Release --self-contained true
 ```
 
-## Настройка (Gitlab)
-
-- Создайте новую учетную запись с помощью https://gitlab.com
-- Создайте новый пустой проект.
-- В вашем проекте нажмите на значок +, затем создайте новый файл с именем `.gitlab-ci.yml` вставьте следующую конфигурацию и commit файл.
-
-```yaml
-pages:
-  stage: deploy
-  environment: production
-  script:
-    - mkdir .public
-    - cp -r ./* .public
-    - rm -rf public
-    - mv .public public
-  artifacts:
-    paths:
-      - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-```
-
-> Обратите внимание, что в бесплатном gitlab на каждый репозиторий предоставляется максимум 10Gb, либо платите за премиум, либо, когда репозиторий заполнится, замените его на новый в конфигурации "appsettings.json".
-
-
 ## Настройки (appsettings.json)
 
 Для настройки бота необходимо заполнить все параметры в файле `appsettings.json`. Ниже приведено подробное описание каждого раздела.

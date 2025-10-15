@@ -9,10 +9,7 @@ class Program
             {
                 webBuilder.ConfigureServices((context, services) =>
                 {
-                    // Register your bot as a background hosted service
                     services.AddHostedService<BotService>();
-
-                    // Register controllers (for your /redirect endpoint etc.)
                     services.AddControllersWithViews();
                 });
 
@@ -31,7 +28,6 @@ class Program
                     });
                 });
 
-                // Listen on both 80 and 443 (make sure you have permissions or run as root if required)
                 webBuilder.UseUrls("http://0.0.0.0:80", "https://0.0.0.0:443");
             })
             .Build();
